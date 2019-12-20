@@ -12,7 +12,7 @@
 // =================================================
 #define RECE_BUF_LEN 128 // receive buffer length
 #define SEND_BUF_LEN 128 // send buffer length
-#define PORT      0xa5a6 // port
+#define PORT      0xa5a6 // port 十进制是42406
 
 // =================================================
 // =================================================
