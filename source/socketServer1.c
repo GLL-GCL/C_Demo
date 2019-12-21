@@ -13,8 +13,8 @@
 #define RECE_BUF_LEN 128 // receive buffer length
 #define SEND_BUF_LEN 128 // send buffer length
 #define PORT      0xa5a6 // port
-#define SERVER_INIT_IP      "192.168.50.130"
-#define CLIENT_INIT_IP      "192.168.50.129"
+#define SERVER_INIT_IP      "192.168.50.129"
+#define CLIENT_INIT_IP      "192.168.50.130"
 
 
 // =================================================
@@ -23,7 +23,6 @@
 // =================================================
 // =================================================
 int g_uDebugFlag = 0;
-
 
 // 服务器端文件描述符
 int server_fd;
@@ -54,16 +53,20 @@ int setSockaddr_in(struct sockaddr_in *pAddr, sa_family_t sin_family, const char
     // 对socket数据结构内存初始化
     memset(pAddr, 0, sizeof(struct sockaddr_in));
 
+    // printf("sizeof(struct sockaddr_in) = %d\n", sizeof(struct sockaddr_in));
+    // printf("sizeof(pAddr) = %d\n", sizeof(pAddr));
+    // printf("sizeof(*pAddr) = %d\n", sizeof(*pAddr));
+
     if(g_uDebugFlag){
         printf("%s at %d : hostlong = %s\n", __FUNCTION__, __LINE__, strptr);
     }
-    
+
     (*pAddr).sin_family = sin_family;
     // 两种配置绑定IP的方式
     // 方式一
     inet_pton(sin_family, strptr, &(*pAddr).sin_addr.s_addr);
     // 方式二
-
+    
     // (*pAddr).sin_port = htons(hostshort);
     (*pAddr).sin_port = htons(PORT); // 这里写死，统一使用同一个端口号
 
@@ -130,7 +133,6 @@ int serverSend(char* sendBuf, int sendBufLen){
     // printf("str = %s\n", str);
 
     printf("sendLen = %d\n", sendLen);
-
     if(sendLen <= 0){
         printf("%s at %d : sendLen  0 fail !!!\n", __FUNCTION__,__LINE__);
         return -1;
@@ -171,13 +173,13 @@ int serverReceive(){
         printf("=================== begin to receive message =====================\n");
         int receLen;
         receLen = recvfrom(server_fd, receBuf, sizeof(receBuf), 0, (struct sockaddr*)&client_addr_from, &socklen);
-        
+        printf("receLen = %d\n", receLen);
+
         // inet_ntop调用成功时，这个指针就是inet_ntop函数的返回值
         char str[INET_ADDRSTRLEN] = {0};
         printf("receive from %s at port %d.\n", inet_ntop(AF_INET, &client_addr_from.sin_addr, str, sizeof(str)), ntohs(client_addr_from.sin_port));
         // printf("str = %s\n", str);
 
-        printf("receLen = %d\n", receLen);
         if(receLen <= 0){
             printf("%s at %d : receLen  0 fail !!!\n", __FUNCTION__,__LINE__);
             continue;
@@ -192,22 +194,22 @@ int serverReceive(){
         printf("=================== now receive message over =====================\n");
         printf("\n");
 
-        // 正常功能用这个
-        // if(setSockaddr_in(&client_addr, AF_INET, inet_ntop(AF_INET, &client_addr_from.sin_addr, str, sizeof(str)), ntohs(client_addr_from.sin_port)) != 0){
-        //     printf("%s at %d : setSockaddr_in set fail !!!\n", __FUNCTION__,__LINE__);
-        //     continue;
-        // }
-
-        // 调试用，正常功能用上面的
-        if(setSockaddr_in(&client_addr, AF_INET, CLIENT_INIT_IP, PORT) != 0){
+        if(setSockaddr_in(&client_addr, AF_INET, inet_ntop(AF_INET, &client_addr_from.sin_addr, str, sizeof(str)), ntohs(client_addr_from.sin_port)) != 0){
             printf("%s at %d : setSockaddr_in set fail !!!\n", __FUNCTION__,__LINE__);
             continue;
         }
 
-        if(serverSend(receBuf, receLen) != 0){
-            printf("%s at %d : serverSend fail !!!\n", __FUNCTION__,__LINE__);
-            continue;
-        }
+        // ===================================================
+        // ===================================================
+        // 注意：如果不serverSend(receBuf，需要在这里
+        //       把接收buf清空，不然输出信息有误。
+        memset(receBuf, 0, receLen);
+        // ===================================================
+        // ===================================================
+        // if(serverSend(receBuf, receLen) != 0){
+        //     printf("%s at %d : serverSend fail !!!\n", __FUNCTION__,__LINE__);
+        //     continue;
+        // }
     }
     // ==========================================================
     // 5. 关闭套接字，是用close()函数释放资源
@@ -233,5 +235,4 @@ int main(){
         printf("%s at %d : serverReceive fail !!!\n", __FUNCTION__,__LINE__);
         return -1;
    }
-   
 }
